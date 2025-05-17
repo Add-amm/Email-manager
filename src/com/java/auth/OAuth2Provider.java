@@ -6,6 +6,9 @@ import java.nio.file.Paths;
 
 import org.json.JSONObject;
 
+import com.java.beans.Cookies;
+import com.java.beans.User;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +41,10 @@ public abstract class OAuth2Provider {
 
     // Retourne l'URL d'autorisation OAuth2 pour ce provider
     public abstract String getOAuth2Code() throws Exception;
+    
+    public abstract Cookies getRefreshedAccessToken(String user_id, String refresh_token) throws Exception;
+    
+    public abstract User getCustomerInfos(String token);
     
     public String getUsersInfos(String url, String accessToken) throws UnsupportedEncodingException, IOException, URISyntaxException {
     	

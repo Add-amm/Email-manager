@@ -9,6 +9,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 
+import org.json.JSONObject;
+
+import com.java.beans.Cookies;
+import com.java.beans.User;
 import com.java.server.OAuthCallbackServer;
 
 public class YahooProvider extends OAuth2Provider {
@@ -49,7 +53,31 @@ public class YahooProvider extends OAuth2Provider {
         return OAuthCallbackServer.getAuthorizationCode();
     }
     
+    @Override
+    public Cookies getRefreshedAccessToken(String user_id, String refresh_token) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+    
     public String GetAccountInfos(String token) throws UnsupportedEncodingException, IOException, URISyntaxException {
     	return super.getUsersInfos("https://api.login.yahoo.com/openid/v1/userinfo", token);
     }
+    
+    @Override
+	public User getCustomerInfos(String token) {
+    	try {
+			String json = super.getUsersInfos("https://www.googleapis.com/oauth2/v3/userinfo", token);
+			
+			// Convertion en fichier JSON
+			JSONObject js = new JSONObject(json);
+			String user_id = js.getString("sub");
+			String mail = js.getString("email");
+			String fullName = js.getString("name");
+			
+			return new User(user_id, mail, fullName);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

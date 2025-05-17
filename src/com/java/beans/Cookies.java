@@ -1,17 +1,16 @@
 package com.java.beans;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Cookies {
 	private String token;
-	private UUID user_id;
+	private String user_id;
 	private LocalDateTime expires_at;
 	private String company;
 
 	public Cookies() {}
 
-	public Cookies(String token, UUID user_id, LocalDateTime expires_at, String company) {
+	public Cookies(String token, String user_id, LocalDateTime expires_at, String company) {
 		this.token = token;
 		this.user_id = user_id;
 		this.expires_at = expires_at;
@@ -26,11 +25,11 @@ public class Cookies {
 		this.token = token;
 	}
 
-	public UUID getUser_id() {
+	public String getUser_id() {
 		return user_id;
 	}
 
-	public void setUser_id(UUID user_id) {
+	public void setUser_id(String user_id) {
 		this.user_id = user_id;
 	}
 

@@ -1,3 +1,5 @@
+package com.java.ui;
+
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
@@ -6,6 +8,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+@SuppressWarnings("serial")
 public class MailManagerFrame extends JFrame {
     private JPanel categoriesPanel;
     private JPanel mailList;
@@ -267,7 +270,7 @@ public class MailManagerFrame extends JFrame {
         logoutBtn.addActionListener(e -> {
             currentAccount = null;
             dispose();
-            new LoginFrame().setVisible(true);
+            new AppLoginFrame().setVisible(true);
         });
         accountPanel.add(logoutBtn);
 
@@ -275,7 +278,7 @@ public class MailManagerFrame extends JFrame {
         addBtn.setForeground(textColor);
         addBtn.setBackground(ThemeManager.getButtonColor());
         addBtn.addActionListener(e -> {
-            new LoginFrame().setVisible(true);
+            new AppLoginFrame().setVisible(true);
         });
         accountPanel.add(addBtn);
 

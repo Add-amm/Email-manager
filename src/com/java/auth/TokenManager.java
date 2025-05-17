@@ -12,10 +12,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.prefs.Preferences;
-
-import org.json.JSONObject;
 
 import com.java.beans.Cookies;
 
@@ -93,13 +90,13 @@ public class TokenManager {
      * Enregistre le user_id + token dans un fichier sous la forme : {user_id: {"token": token, "expires_at": expires_at}}
      */
     public static void saveToken(Cookies C) {
-    	UUID user_id = C.getUser_id();
+    	String user_id = C.getUser_id();
     	String token = C.getToken();
     	LocalDateTime expires_at = C.getExpires_at();
     	String company = C.getCompany();
     	
     	try {
-			prefs.put("user_id", user_id.toString());
+			prefs.put("user_id", user_id);
 			prefs.put("token", token);
 			prefs.put("expires_at", expires_at.toString());;
 			prefs.put("company", company);
@@ -119,15 +116,12 @@ public class TokenManager {
     	
     	// Si le token pour cette utilisateur n'existe pas, on retourne null
     	if (token == null) return null;
-        
-    	// Reconvertion du user_id en UUID
-    	UUID userId = UUID.fromString(user_id);
     	
         // Reconvertion de la date en LocalDateTime
         LocalDateTime expiration_date = LocalDateTime.parse(expires_at);
         
         // Retourne le token si il n'est pas expirée sinon null
-        return expiration_date.isAfter(LocalDateTime.now()) ? new Cookies(token, userId, expiration_date, company) : new Cookies(null, userId, null, company);
+        return expiration_date.isAfter(LocalDateTime.now()) ? new Cookies(token, user_id, expiration_date, company) : new Cookies(null, user_id, null, company);
     }
     
     public static void clearToken() {

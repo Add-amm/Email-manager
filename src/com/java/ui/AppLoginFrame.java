@@ -13,7 +13,6 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-@SuppressWarnings("serial")
 public class AppLoginFrame extends JFrame {
     private JTextField emailField;
     private JPasswordField passwordField;

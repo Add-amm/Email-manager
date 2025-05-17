@@ -1,10 +1,9 @@
 package com.java.beans;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Tokens {
-	private UUID user_id;
+	private String user_id;
 	private String company;
 	private String access_token;
 	private int expire_in; private LocalDateTime expire_at;
@@ -13,7 +12,7 @@ public class Tokens {
 	
 	public Tokens() {}
 
-	public Tokens(UUID user_id, String company, String access_token, int expire_in, String refresh_token, int refresh_token_expires_in) {
+	public Tokens(String user_id, String company, String access_token, int expire_in, String refresh_token, int refresh_token_expires_in) {
 		this.user_id = user_id;
 		this.company = company;
 		this.access_token = access_token;
@@ -22,7 +21,7 @@ public class Tokens {
 		this.refresh_token_expires_in = refresh_token_expires_in;
 	}
 	
-	public Tokens(UUID user_id, String company, String access_token, LocalDateTime expire_at, String refresh_token, LocalDateTime refresh_token_expires_at) {
+	public Tokens(String user_id, String company, String access_token, LocalDateTime expire_at, String refresh_token, LocalDateTime refresh_token_expires_at) {
 		this.user_id = user_id;
 		this.company = company;
 		this.access_token = access_token;
@@ -31,7 +30,7 @@ public class Tokens {
 		this.refresh_token_expires_at = refresh_token_expires_at;
 	}
 
-	public UUID getUser_id() {
+	public String getUser_id() {
 		return user_id;
 	}
 
@@ -51,7 +50,7 @@ public class Tokens {
 		this.refresh_token_expires_at = refresh_token_expires_at;
 	}
 
-	public void setUser_id(UUID uuid) {
+	public void setUser_id(String uuid) {
 		this.user_id = uuid;
 	}
 
