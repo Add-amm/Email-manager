@@ -1,42 +1,40 @@
 package com.java.auth;
 
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
-import org.apache.hc.core5.http.NameValuePair;
-import org.apache.hc.core5.http.message.BasicNameValuePair;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.prefs.Preferences;
+
+import org.json.JSONObject;
+
+import com.java.beans.Cookies;
 
 /**
  * Permet d’échanger un code d'autorisation contre un access_token + refresh_token.
  */
 public class TokenManager {
+	
+	private static final Preferences prefs = Preferences.userNodeForPackage(TokenManager.class);
 
-	public static String exchangeCodeForToken(OAuth2Provider provider, String code) throws IOException {
+	public static String exchangeCodeForToken(OAuth2Provider provider, String code) throws IOException, URISyntaxException {
 		String clientId = provider.getClientId();
 	    String clientSecret = provider.getClientSecret();
 	    String redirectUri = provider.getRedirectUri();
 	    String tokenEndpoint = getTokenUrl(provider);
 		
-		URL url = new URL(tokenEndpoint);
+	    URI uri = new URI(tokenEndpoint);
+		URL url = uri.toURL();
+		
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         // Configuration POST
@@ -89,25 +87,52 @@ public class TokenManager {
         }
     }
     
+    // Implémentation d'une logique Cookie
     
-    public static void main(String[] args) throws Exception {
-        try {
-        	GmailProvider provider = new GmailProvider();
-            provider.loadCredentials("resources/gmail_client.json");
-            // Lire tout le contenu du fichier JSON en String
-            String content = new String(Files.readAllBytes(Paths.get("resources/oauth2token_credentials.json")));
-            // Créer un objet JSON à partir du contenu String
-            JSONObject json = new JSONObject(content);
-            // Extraire la valeur d'une clé, par exemple "client_id"
-            String code = json.getString("code");
-
-            String jsonResponse = exchangeCodeForToken(provider, code);
-            System.out.println("Réponse JSON token : " + jsonResponse);
-            
-            // Extraction du token
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    /**
+     * Enregistre le user_id + token dans un fichier sous la forme : {user_id: {"token": token, "expires_at": expires_at}}
+     */
+    public static void saveToken(Cookies C) {
+    	UUID user_id = C.getUser_id();
+    	String token = C.getToken();
+    	LocalDateTime expires_at = C.getExpires_at();
+    	String company = C.getCompany();
+    	
+    	try {
+			prefs.put("user_id", user_id.toString());
+			prefs.put("token", token);
+			prefs.put("expires_at", expires_at.toString());;
+			prefs.put("company", company);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * @return le token si il est valide, sinon un objet Cookie contenant seulememt le user_id et les autres champ null
+     */
+    public static Cookies loadToken() {
+    	String user_id = prefs.get("user_id", null);
+    	String token = prefs.get("token", null);
+    	String expires_at = prefs.get("expires_at", null);
+    	String company = prefs.get("company", null);
+    	
+    	// Si le token pour cette utilisateur n'existe pas, on retourne null
+    	if (token == null) return null;
+        
+    	// Reconvertion du user_id en UUID
+    	UUID userId = UUID.fromString(user_id);
+    	
+        // Reconvertion de la date en LocalDateTime
+        LocalDateTime expiration_date = LocalDateTime.parse(expires_at);
+        
+        // Retourne le token si il n'est pas expirée sinon null
+        return expiration_date.isAfter(LocalDateTime.now()) ? new Cookies(token, userId, expiration_date, company) : new Cookies(null, userId, null, company);
+    }
+    
+    public static void clearToken() {
+    	prefs.remove("user_id");
+    	prefs.remove("token");
+    	prefs.remove("expires_at");
     }
 }

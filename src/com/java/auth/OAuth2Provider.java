@@ -1,9 +1,20 @@
 package com.java.auth;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 public abstract class OAuth2Provider {
 
@@ -26,7 +37,43 @@ public abstract class OAuth2Provider {
     }
 
     // Retourne l'URL d'autorisation OAuth2 pour ce provider
-    public abstract String getAuthUrl() throws Exception;
+    public abstract String getOAuth2Code() throws Exception;
+    
+    public String getUsersInfos(String url, String accessToken) throws UnsupportedEncodingException, IOException, URISyntaxException {
+    	
+    	URI uri = new URI(url);
+		URL requestUrl = uri.toURL();
+		
+        HttpURLConnection connection = (HttpURLConnection) requestUrl.openConnection();
+
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization", "Bearer " + accessToken);
+        connection.setConnectTimeout(10000); // facultatif
+        connection.setReadTimeout(10000);    // facultatif
+
+        int responseCode = connection.getResponseCode();
+        InputStream stream;
+
+        if (responseCode >= 200 && responseCode < 400) {
+            stream = connection.getInputStream();
+        } else {
+            stream = connection.getErrorStream();
+        }
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+
+        String inputLine;
+        StringBuilder response = new StringBuilder();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+
+        in.close();
+        connection.disconnect();
+        
+        return response.toString();
+    }
 
     public String getClientId() {
         return clientId;
