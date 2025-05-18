@@ -1,12 +1,10 @@
-package com.java.ui;
-
-import javax.swing.*;
-import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
+import javax.swing.*;
+import javax.swing.text.JTextComponent;
 
 @SuppressWarnings("serial")
 public class MailManagerFrame extends JFrame {

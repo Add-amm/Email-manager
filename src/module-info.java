@@ -12,4 +12,6 @@ module EmailManager {
 	requires jdk.httpserver;
 	requires java.sql;
 	requires java.prefs;
+	requires jakarta.mail;
+	requires jakarta.activation;
 }

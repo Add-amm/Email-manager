@@ -1,4 +1,3 @@
-package com.java.ui;
 
 import java.awt.Color;
 import java.awt.Cursor;

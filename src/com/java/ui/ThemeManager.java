@@ -1,5 +1,3 @@
-package com.java.ui;
-
 import java.awt.Color;
 
 public class ThemeManager {
