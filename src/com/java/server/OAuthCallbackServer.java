@@ -16,7 +16,8 @@ public class OAuthCallbackServer {
     }
 
     public static void startServer() throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8888), 0);
+    	
+    	HttpServer server = HttpServer.create(new InetSocketAddress(8888), 0);
         server.createContext("/callback", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {

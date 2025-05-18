@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 import org.json.JSONObject;
 
@@ -33,11 +34,15 @@ public class YahooProvider extends OAuth2Provider {
         StringJoiner scopeJoiner = new StringJoiner(" ");
         for (String scope : scopes) scopeJoiner.add(scope);
 
+        String state = UUID.randomUUID().toString();
+        
         String url = baseUrl
                 + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
                 + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
                 + "&response_type=code"
-                + "&scope=" + URLEncoder.encode(scopeJoiner.toString(), StandardCharsets.UTF_8);
+                + "&scope=" + URLEncoder.encode(scopeJoiner.toString(), StandardCharsets.UTF_8)
+                + "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8)
+                + "&response_mode=form_post";
 
         // Start local server to handle redirect
         OAuthCallbackServer.startServer();
@@ -53,6 +58,7 @@ public class YahooProvider extends OAuth2Provider {
         return OAuthCallbackServer.getAuthorizationCode();
     }
     
+    // Non développée
     @Override
     public Cookies getRefreshedAccessToken(String user_id, String refresh_token) throws Exception {
 		// TODO Auto-generated method stub

@@ -1,11 +1,16 @@
 package com.java.App;
 
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
+import java.util.UUID;
 
 import com.java.auth.*;
 
@@ -15,16 +20,13 @@ import com.java.jdbc.*;
 
 import com.java.mail.*;
 
-import jakarta.activation.DataHandler;
-import jakarta.activation.FileDataSource;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
+import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
 
 import org.json.JSONObject;
 
@@ -37,12 +39,15 @@ public class Main {
 	private static GeneralMailClient client;
 	
 	private static List<MimeMessage> mailMessages;
+	private static List<MimeMessage> sentMessages;
+	private static List<MimeMessage> programmedMessages = new ArrayList<>();
 	
 	// Initialisation de la connexion avec la base de données
     private static DataSource ds = new MySQLDataSource("mail_manager");
 	private static Database db = new Database(ds);
 
 	public static void main(String[] args) throws Exception {
+		
         try {
         	// 1. Verifier le cache
         	Cookies cookie = TokenManager.loadToken();
@@ -70,24 +75,40 @@ public class Main {
         client = getClient(company);
         
         // Charger tous les mails de la boîte
-        mailMessages = client.receiveAllEmails();
-        
-        // Inverser l'ordre des mails pour commencer par le plus récent
-        Collections.reverse(mailMessages);
+        refreshAll();
         
         // Nombre total de mails
         int MaxMails = mailMessages.size();
+        int MaxSentMails = sentMessages.size();
+        
+        
+        // ----------------------------------------------------------------------------------------------------------------------------------------------------------
+        // TESTS
         
         // Test d'envoi
-        String destinataire = "adamsorouri@gmail.com";
-        String sujet = "Test 1";
-        String msg = "Ceci est le 1er test";
-        String filepath = "D:\\ENSAM\\INDIA\\S2\\Statistique";
+        // String destinataire = "adamsorouri@gmail.com";
+        String destinataire = "adamsorouri@gmail.com adamsorouri8901@gmail.com";
+        String sujet = "CV";
+        String msg = "Bonjour !";
+        LocalDateTime futureTime = LocalDateTime.of(2025, 5, 18, 17, 31); // 18 mai 2025 à 17h31
         
-        // Envoi
-        SendMail(destinataire, sujet, msg);
-        SendMailWithAttachment(destinataire, sujet, msg, filepath);
+        // Envois
         
+        /*
+        // SendMail(destinataire, sujet, msg);
+        SendScheduledMail(destinataire, sujet, msg, futureTime);
+        
+        // Test si elle est stocker dans le programmedMessages
+        for (MimeMessage m: programmedMessages) {
+        	showMessageForTest(m);
+        }
+         // Test si elle s'auto supprime lorsque le message est envoyée (VERIFIER)
+        Thread.sleep(60 * 1000);
+        
+        for (MimeMessage m: programmedMessages) {
+        	showMessageForTest(m);
+        }
+        */
         
         // Pour l'envoi groupé, le champ destinataire récuperer depuis l'interface graphique contiendra tous les destinataies séparés par un espace
         if (destinataire.contains(" ")) {
@@ -95,12 +116,23 @@ public class Main {
         	SendGroupedMail(destinataires, sujet, msg);
         }
         
-        // Test de reception pour 10 messages
-        int count = Math.min(10, MaxMails);
+        // Test de reception pour 20 messages
+        int count = Math.min(20, MaxMails);
        
         for (int i = 0; i < count; i++) {
         	showMessageForTest(mailMessages.get(i));
         }
+        
+        // Test pour les mail envoyés
+
+        // Test de reception pour 25 messages
+        /*
+        int count = Math.min(25, MaxSentMails);
+       
+        for (int i = 0; i < count; i++) {
+        	showMessageForTest(sentMessages.get(i));
+        }
+        */
 	}
 	
 	public static void AuthentificationFromCache(Cookies cookie) {
@@ -200,6 +232,16 @@ public class Main {
 	
 	public static void Deconnexion() {
 		TokenManager.clearToken();
+		token = null;
+		company = null;
+		provider = null;
+		mail = null;
+		
+		client = null;
+		
+		mailMessages = null;
+		sentMessages = null;
+		programmedMessages = new ArrayList<>();
 	}
 	
 	public static OAuth2Provider getProvider(String company) throws Exception {
@@ -237,59 +279,22 @@ public class Main {
 		}
 	}
 	
-	// A marche
-	public static String SendMail(String destinataire, String Objet, String message) {
+	public static int SendMail(String destinataire, String Objet, String message) {
         try {
         	MimeMessage msg = new MimeMessage(client.getSmtpSession());
+        	msg.setHeader("Message-ID", "<" + UUID.randomUUID().toString() + "@" + "domaine.com" + ">");
 			msg.setFrom(new InternetAddress(mail));
 	        msg.addRecipient(Message.RecipientType.TO, new InternetAddress(destinataire));
-	        msg.setSubject("Test");
-	        msg.setText("Bonjour, ceci est un test.");
+	        msg.setSubject(Objet);
+	        msg.setText(message);
 
 	        client.sendEmail(msg);
+	        return 1;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "Erreur !";
+			return -1;
 		}
-		
-    	return "Email envoyé avec succès !";
     }
-	
-	public static String SendMailWithAttachment(String destinataire, String Objet, String message, String filepath) {
-		try {
-			MimeMessage msg = new MimeMessage(client.getSmtpSession());
-			msg.setFrom(new InternetAddress(mail));
-			msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(destinataire));
-			msg.setSubject(Objet);
-
-			// Créer Multipart pour le message
-			Multipart multipart = new MimeMultipart();
-
-			// Partie texte
-			MimeBodyPart textPart = new MimeBodyPart();
-			textPart.setText("Voici le corps du message.");
-			multipart.addBodyPart(textPart);
-
-			// Partie pièce jointe
-			MimeBodyPart attachmentPart = new MimeBodyPart();
-			jakarta.activation.DataSource source = new FileDataSource(filepath);
-			attachmentPart.setDataHandler(new DataHandler(source));
-			attachmentPart.setFileName(new File(filepath).getName());
-			multipart.addBodyPart(attachmentPart);
-
-			// Affecter multipart au message (PAS dans un MimeBodyPart)
-			msg.setContent(multipart);
-
-            // Envoi du message
-            client.sendEmail(msg);
-
-            return "Email envoyé avec pièce jointe.";
-
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            return "Erreur !";
-        }
-	}
 	
 	public static List<MimeMessage> LoadMails(int number) {
 		try {
@@ -300,33 +305,41 @@ public class Main {
 		}
 	}
 	
+	public static String lireContenu(InputStream inputStream) throws IOException {
+	    StringBuilder contenu = new StringBuilder();
+	    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
+	        String ligne = reader.readLine();
+	        if (ligne != null) {
+	            contenu.append(ligne);
+	            while ((ligne = reader.readLine()) != null) {
+	                contenu.append("\n").append(ligne);
+	            }
+	        }
+	    }
+	    
+	    if (contenu.toString().length() > 100) return "Unknown";
+	    return contenu.toString();
+	}
+	
+	
 	public static void showMessageForTest(MimeMessage message) {
+		
+		if (message == null) System.out.println("Il n y a rien dans la boite");
 	    try {
 	        System.out.println("----- Message Info -----");
-	        System.out.println("From: " + Arrays.toString(message.getFrom()));
+	        String CompanyName = ((InternetAddress) message.getFrom()[0]).getPersonal();
+	        String CompanyMail = ((InternetAddress) message.getFrom()[0]).getAddress();
+	        String sys = "";
+	        if (CompanyName != null)
+	        	sys = "From : " + CompanyName + ", ";
+	        System.out.println(sys + "Adresse : " + CompanyMail);
 	        System.out.println("To: " + Arrays.toString(message.getRecipients(Message.RecipientType.TO)));
 	        System.out.println("Subject: " + message.getSubject());
 	        System.out.println("Sent Date: " + message.getSentDate());
 
 	        Object content = message.getContent();
 
-	        if (content instanceof String) {
-	            System.out.println("Body:\n" + content);
-	        } else if (content instanceof Multipart) {
-	            Multipart multipart = (Multipart) content;
-	            StringBuilder bodyText = new StringBuilder();
-	            for (int i = 0; i < multipart.getCount(); i++) {
-	                BodyPart part = multipart.getBodyPart(i);
-	                if (part.isMimeType("text/plain")) {
-	                    bodyText.append(part.getContent());
-	                } else if (part.isMimeType("text/html")) {
-	                    bodyText.append("[HTML content suppressed]");
-	                }
-	            }
-	            System.out.println("Body (text/plain parts):\n" + bodyText);
-	        } else {
-	            System.out.println("Unsupported content type: " + content.getClass().getName());
-	        }
+	        System.out.println("Body:\n" + lireContenu( (InputStream) content));
 
 	        System.out.println("-------------------------");
 	    } catch (Exception e) {
@@ -334,7 +347,7 @@ public class Main {
 	        e.printStackTrace();
 	    }
 	}
-	
+
 	public static String SendGroupedMail(String[] destinataires, String Objet, String message) {
 		for (String destinataire: destinataires) {
 			SendMail(destinataire, Objet, message);
@@ -342,7 +355,53 @@ public class Main {
 		return "Email envoyé avec succès !";
 	}
 	
-	public static String SendScheduledMail(String destinataire, String Objet, String message) {
-		return null;
+	public static int SendScheduledMail(String destinataire, String Objet, String message, LocalDateTime at) {
+		
+		MimeMessage msg = new MimeMessage(client.getSmtpSession());
+		try {
+			msg.setFrom(new InternetAddress(mail));
+			msg.setReplyTo(InternetAddress.parse(mail));
+	        msg.addRecipient(Message.RecipientType.TO, new InternetAddress(destinataire));
+	        msg.setSubject(Objet);
+	        msg.setText(message);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+		
+        programmedMessages.add(msg);
+		
+		Runnable emailTask = () -> {
+	        try {
+	            SendMail(destinataire, Objet, message);
+	            programmedMessages.remove(msg);
+	        } catch (Exception e) {
+	            programmedMessages.remove(msg);
+	            e.printStackTrace();
+	        }
+	    };
+	    
+	    EmailScheduler.scheduleEmail(emailTask, at);
+		return 1;
+	}
+	
+	public static void refreshMailMessages() throws MessagingException {
+		mailMessages = client.receiveAllEmails();
+		
+		// Inverser l'ordre des mails pour commencer par le plus récent
+        Collections.reverse(mailMessages);
+	}
+	
+	public static void refreshSentMessages() {
+		sentMessages = client.loadSentEmails();
+		
+		// Inverser l'ordre des mails pour commencer par le plus récent
+        Collections.reverse(sentMessages);
+	}
+	
+	public static void refreshAll() throws MessagingException {
+		refreshMailMessages();
+		refreshSentMessages();
 	}
 }
