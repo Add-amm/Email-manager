@@ -14,4 +14,6 @@ module EmailManager {
 	requires java.prefs;
 	requires jakarta.mail;
 	requires jakarta.activation;
+	requires javafx.fxml;
+	requires javafx.graphics;
 }
