@@ -16,8 +16,9 @@ public class OAuthCallbackServer {
     }
 
     public static void startServer() throws IOException {
-    	
-    	HttpServer server = HttpServer.create(new InetSocketAddress(8888), 0);
+        authorizationCode = null;  // <-- Remise à zéro avant chaque démarrage
+        
+        HttpServer server = HttpServer.create(new InetSocketAddress(8888), 0);
         server.createContext("/callback", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -29,7 +30,7 @@ public class OAuthCallbackServer {
                     OutputStream os = exchange.getResponseBody();
                     os.write(response.getBytes());
                     os.close();
-                    server.stop(1); // stop the server after handling the request
+                    server.stop(1);
                 }
             }
 

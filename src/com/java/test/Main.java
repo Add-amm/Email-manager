@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,11 +21,8 @@ import com.java.jdbc.*;
 
 import com.java.mail.*;
 
-import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
-import jakarta.mail.Multipart;
-import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
@@ -41,6 +39,14 @@ public class Main {
 	private static List<MimeMessage> mailMessages;
 	private static List<MimeMessage> sentMessages;
 	private static List<MimeMessage> programmedMessages = new ArrayList<>();
+	
+	private static int mailMessagesCurr = 0;
+	private static int sentMessagesCurr = 0;
+	@SuppressWarnings("unused")
+	private static int programmedMessagesCurr = 0;
+	
+	private static int MaxMails;
+	private static int MaxSentMails;
 	
 	// Initialisation de la connexion avec la base de données
     private static DataSource ds = new MySQLDataSource("mail_manager");
@@ -77,14 +83,13 @@ public class Main {
         // Charger tous les mails de la boîte
         refreshAll();
         
-        // Nombre total de mails
-        int MaxMails = mailMessages.size();
-        int MaxSentMails = sentMessages.size();
-        
+        // Lancer le menu
+        menu();
         
         // ----------------------------------------------------------------------------------------------------------------------------------------------------------
         // TESTS
         
+        /*
         // Test d'envoi
         // String destinataire = "adamsorouri@gmail.com";
         String destinataire = "adamsorouri@gmail.com adamsorouri8901@gmail.com";
@@ -94,21 +99,20 @@ public class Main {
         
         // Envois
         
-        /*
-        SendMail(destinataire, sujet, msg);
+        
         SendScheduledMail(destinataire, sujet, msg, futureTime);
         
         // Test si elle est stocker dans le programmedMessages
         for (MimeMessage m: programmedMessages) {
-        	showMessageForTest(m);
+        	showMessage(m);
         }
          // Test si elle s'auto supprime lorsque le message est envoyée (VERIFIER)
         Thread.sleep(60 * 1000);
         
         for (MimeMessage m: programmedMessages) {
-        	showMessageForTest(m);
+        	showMessage(m);
         }
-        */
+        
         
         // Pour l'envoi groupé, le champ destinataire récuperer depuis l'interface graphique contiendra tous les destinataies séparés par un espace
         if (destinataire.contains(" ")) {
@@ -120,19 +124,257 @@ public class Main {
         int count = Math.min(20, MaxMails);
        
         for (int i = 0; i < count; i++) {
-        	showMessageForTest(mailMessages.get(i));
+        	showMessage(mailMessages.get(i));
         }
         
         // Test pour les mail envoyés
 
         // Test de reception pour 25 messages
-        /*
         int count = Math.min(25, MaxSentMails);
        
         for (int i = 0; i < count; i++) {
-        	showMessageForTest(sentMessages.get(i));
+        	showMessage(sentMessages.get(i));
         }
         */
+	}
+	
+	public static void menu() throws Exception {
+		User u = provider.getCustomerInfos(token);
+		String fullname = u.getFullName();
+		
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+		
+		System.out.println("Bonjour " + fullname);
+		System.out.println("1 - Envoyer mail");
+		System.out.println("2 - Lire les mails");
+		System.out.println("3 - Lire les mails envoyés");
+		System.out.println("4 - Envoyer un mail groupé");
+		System.out.println("5 - Programmer un mail");
+		System.out.println("6 - Programmer un mail groupé");
+		System.out.println("7 - Lire les mails programmés");
+		System.out.println("0 - Se déconnecter");
+		System.out.println("Votre choix : ");
+		
+        int choix = scanner.nextInt();
+        
+        switch (choix) {
+        	case 1:
+        		SendMailMenu();
+        	case 2:
+        		ShowMails();
+        	case 3:
+        		ShowSentMails();
+        	case 4:
+        		SendGroupedMailMenu();
+        	case 5:
+        		ProgrammedMailMenu();
+        	case 6:
+        		ProgrammedGroupedMailMenu();
+        	case 7:
+        		ShowProgrammedMails();
+        	case 0:
+				Deconnexion();
+        	default:
+        		menu();
+        }
+	}
+	
+	public static void ShowProgrammedMails() {
+		for (MimeMessage m: programmedMessages) {
+			showMessage(m);
+		}
+	}
+	
+	public static void ProgrammedGroupedMailMenu() throws Exception {
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+		
+		System.out.println("Veuillez entrer l'adresse mail des destinataires séparées par un espace : ");
+		String to = scanner.nextLine();
+		System.out.println("Veuillez entrer l'objet du mail : ");
+		String object = scanner.nextLine();
+		System.out.println("Veuillez entrer le sujet du mail : ");
+		String subject = scanner.nextLine();
+		System.out.println("Veuillez entrer la date de l'envoi de la même forme que (yyyy-MM-dd HH:mm:ss) : ");
+		String date = scanner.nextLine();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd H:mm:ss");
+		LocalDateTime dateTime = LocalDateTime.parse(date, formatter);
+		
+		String[] destinataires = to.split(" ");
+		for (String dest: destinataires) {
+			try {
+				SendScheduledMail(dest, object, subject, dateTime);
+			} catch(Exception e) {
+				menu();
+			}
+		}
+		
+			
+		System.out.println("1 - Programmer un nouveau mail groupé");
+		System.out.println("0 - Revenir au menu");
+        System.out.println("Votre choix : ");
+		int choix = scanner.nextInt();
+		
+		switch (choix) {
+		case 1:
+			ProgrammedGroupedMailMenu();
+		default: // meme le cas de 0 est inclus ici
+			menu();
+		}
+	}
+	
+	public static void ProgrammedMailMenu() throws Exception {
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+		
+		System.out.println("Veuillez entrer l'adresse mail du destinataire : ");
+		String to = scanner.nextLine();
+		System.out.println("Veuillez entrer l'objet du mail : ");
+		String object = scanner.nextLine();
+		System.out.println("Veuillez entrer le sujet du mail : ");
+		String subject = scanner.nextLine();
+		System.out.println("Veuillez entrer la date de l'envoi de la même forme que (yyyy-MM-dd HH:mm:ss) : ");
+		String date = scanner.nextLine();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd H:mm:ss");
+		LocalDateTime dateTime = LocalDateTime.parse(date, formatter);
+		
+		try {
+			SendScheduledMail(to, object, subject, dateTime);
+		} catch(Exception e) {
+			menu();
+		}
+			
+		System.out.println("1 - Programmer un nouveau mail");
+		System.out.println("0 - Revenir au menu");
+        System.out.println("Votre choix : ");
+		int choix = scanner.nextInt();
+		
+		switch (choix) {
+		case 1:
+			ProgrammedMailMenu();
+		default: // meme le cas de 0 est inclus ici
+			menu();
+		}
+	}
+	
+	public static void SendGroupedMailMenu() throws Exception {
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+		
+		System.out.println("Veuillez entrer l'adresse mail des destinataires séparées par un espace : ");
+		String to = scanner.nextLine();
+		System.out.println("Veuillez entrer l'objet du mail : ");
+		String object = scanner.nextLine();
+		System.out.println("Veuillez entrer le sujet du mail : ");
+		String subject = scanner.nextLine();
+		
+		try {
+		SendGroupedMail(to.split(" "), object, subject);
+		} catch(Exception e) {
+			menu();
+		}
+	
+		System.out.println("1 - Envoyer un nouveau mail groupé");
+		System.out.println("0 - Revenir au menu");
+        System.out.println("Votre choix : ");
+		int choix = scanner.nextInt();
+		
+		switch (choix) {
+		case 1:
+			SendGroupedMailMenu();
+		default: // meme le cas de 0 est inclus ici
+			menu();
+		}
+	}
+	
+	public static void ShowSentMails() throws Exception {
+		int curr = sentMessagesCurr;
+		for (int i = curr; i < Math.min(curr + 20, MaxSentMails); i++) {
+			showMessage(sentMessages.get(i));
+			sentMessagesCurr++;
+		}
+
+		if (sentMessagesCurr != MaxSentMails) {
+			@SuppressWarnings("resource")
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("1 - Page suivante");
+			System.out.println("0 - Revenir au menu");
+	        System.out.println("Votre choix : ");
+			int choix = scanner.nextInt();
+			
+			switch (choix) {
+			case 1:
+				ShowSentMails();
+			default: // meme le cas de 0 est inclus ici
+				sentMessagesCurr = 0;
+				menu();
+			}
+		} else {
+			System.out.println("Vous êtes arrivé(e) à la fin des mails envoyés, retour au menu !");
+			sentMessagesCurr = 0;
+			menu();
+		}
+	}
+	
+	public static void ShowMails() throws Exception {
+		int curr = mailMessagesCurr;
+		for (int i = curr; i < Math.min(curr + 20, MaxMails); i++) {
+			showMessage(mailMessages.get(i));
+			mailMessagesCurr++;
+		}
+		
+		if (mailMessagesCurr != MaxMails) {
+			System.out.println("1 - Page suivante");
+			System.out.println("0 - Revenir au menu");
+	        System.out.println("Votre choix : ");
+
+			@SuppressWarnings("resource")
+			Scanner scanner = new Scanner(System.in);
+			int choix = scanner.nextInt();
+			
+			switch (choix) {
+			case 1:
+				ShowMails();
+			default: // meme le cas de 0 est inclus ici
+				mailMessagesCurr = 0;
+				menu();
+			}
+		} else {
+			System.out.println("Vous êtes arrivé(e) à la fin des mails, retour au menu !");
+			mailMessagesCurr = 0;
+			menu();
+		}
+	}
+	
+	public static void SendMailMenu() throws Exception {
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+		
+		System.out.println("Veuillez entrer l'adresse mail du destinataire : ");
+		String to = scanner.nextLine();
+		System.out.println("Veuillez entrer l'objet du mail : ");
+		String object = scanner.nextLine();
+		System.out.println("Veuillez entrer le sujet du mail : ");
+		String subject = scanner.nextLine();
+		
+		try {
+		SendMail(to, object, subject);
+		} catch(Exception e) {
+			menu();
+		}
+		
+		System.out.println("1 - Envoyer un nouveau mail");
+		System.out.println("0 - Revenir au menu");
+        System.out.println("Votre choix : ");
+		int choix = scanner.nextInt();
+		
+		switch (choix) {
+		case 1:
+			SendMailMenu();
+		default: // meme le cas de 0 est inclus ici
+			menu();
+		}
 	}
 	
 	public static void AuthentificationFromCache(Cookies cookie) {
@@ -177,15 +419,26 @@ public class Main {
 	}
 	
 	public static void Authentification() throws Exception {
+		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(System.in);
 		
-        System.out.println("Choisissez un fournisseur :");
-        System.out.println("Gmail");
-        System.out.println("Outlook");
-        System.out.println("Yahoo");
+        System.out.println("Choisissez le type de votre compte :");
+        System.out.println("1 - Gmail");
+        System.out.println("2 - Outlook");
+        System.out.println("3 - Yahoo");
         System.out.println("Votre choix : ");
         String choix = scanner.nextLine();
-        scanner.close();
+        
+        switch (choix) {
+        	case "1":
+        		company = "Gmail";
+        	case "2":
+        		company = "Outlook";
+        	case "3":
+        		company = "Yahoo";
+        	default:
+        		company = choix.trim();
+        }
 
         provider = getProvider(choix.trim());
 		
@@ -230,7 +483,7 @@ public class Main {
 		mail = u.getMail();
 	}
 	
-	public static void Deconnexion() {
+	public static void Deconnexion() throws Exception {
 		TokenManager.clearToken();
 		token = null;
 		company = null;
@@ -242,21 +495,30 @@ public class Main {
 		mailMessages = null;
 		sentMessages = null;
 		programmedMessages = new ArrayList<>();
+		
+		mailMessagesCurr = 0;
+		sentMessagesCurr = 0;
+		programmedMessagesCurr = 0;
+		
+		MaxMails = 0;
+		MaxSentMails = 0;
+		
+		Authentification();
 	}
 	
 	public static OAuth2Provider getProvider(String company) throws Exception {
 		switch (company) {
-			case "Gmail":
+			case "Gmail", "1":
 				GmailProvider Gmailprovider = new GmailProvider();
 				Gmailprovider.loadCredentials("resources/gmail_client.json");
 				Main.company = "Gmail";
 				return Gmailprovider;
-			case "Outlook" :
+			case "Outlook", "2" :
 				OutlookProvider Outlookprovider = new OutlookProvider();
 				Outlookprovider.loadCredentials("resources/outlook_client.json");
 				Main.company = "Outlook";
 				return Outlookprovider;
-			case "Yahoo" :
+			case "Yahoo", "3" :
 				YahooProvider Yahooprovider = new YahooProvider();
 				Yahooprovider.loadCredentials("resources/yahoo_client.json");
 				Main.company = "Yahoo";
@@ -296,15 +558,6 @@ public class Main {
 		}
     }
 	
-	public static List<MimeMessage> LoadMails(int number) {
-		try {
-			return client.receiveEmails(number);
-		} catch (MessagingException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
 	public static String lireContenu(InputStream inputStream) throws IOException {
 	    StringBuilder contenu = new StringBuilder();
 	    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
@@ -322,7 +575,7 @@ public class Main {
 	}
 	
 	
-	public static void showMessageForTest(MimeMessage message) {
+	public static void showMessage(MimeMessage message) {
 		
 		if (message == null) System.out.println("Il n y a rien dans la boite");
 	    try {
@@ -391,6 +644,8 @@ public class Main {
 		
 		// Inverser l'ordre des mails pour commencer par le plus récent
         Collections.reverse(mailMessages);
+        
+        MaxMails = mailMessages.size();
 	}
 	
 	public static void refreshSentMessages() {
@@ -398,6 +653,8 @@ public class Main {
 		
 		// Inverser l'ordre des mails pour commencer par le plus récent
         Collections.reverse(sentMessages);
+        
+        MaxSentMails = sentMessages.size();
 	}
 	
 	public static void refreshAll() throws MessagingException {
