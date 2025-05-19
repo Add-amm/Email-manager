@@ -85,67 +85,15 @@ public class Main {
         
         // Lancer le menu
         menu();
-        
-        // ----------------------------------------------------------------------------------------------------------------------------------------------------------
-        // TESTS
-        
-        /*
-        // Test d'envoi
-        // String destinataire = "adamsorouri@gmail.com";
-        String destinataire = "adamsorouri@gmail.com adamsorouri8901@gmail.com";
-        String sujet = "CV";
-        String msg = "Bonjour !";
-        LocalDateTime futureTime = LocalDateTime.of(2025, 5, 18, 17, 31); // 18 mai 2025 à 17h31
-        
-        // Envois
-        
-        
-        SendScheduledMail(destinataire, sujet, msg, futureTime);
-        
-        // Test si elle est stocker dans le programmedMessages
-        for (MimeMessage m: programmedMessages) {
-        	showMessage(m);
-        }
-         // Test si elle s'auto supprime lorsque le message est envoyée (VERIFIER)
-        Thread.sleep(60 * 1000);
-        
-        for (MimeMessage m: programmedMessages) {
-        	showMessage(m);
-        }
-        
-        
-        // Pour l'envoi groupé, le champ destinataire récuperer depuis l'interface graphique contiendra tous les destinataies séparés par un espace
-        if (destinataire.contains(" ")) {
-        	String[] destinataires = destinataire.split(" ");
-        	SendGroupedMail(destinataires, sujet, msg);
-        }
-        
-        // Test de reception pour 20 messages
-        int count = Math.min(20, MaxMails);
-       
-        for (int i = 0; i < count; i++) {
-        	showMessage(mailMessages.get(i));
-        }
-        
-        // Test pour les mail envoyés
-
-        // Test de reception pour 25 messages
-        int count = Math.min(25, MaxSentMails);
-       
-        for (int i = 0; i < count; i++) {
-        	showMessage(sentMessages.get(i));
-        }
-        */
 	}
 	
 	public static void menu() throws Exception {
 		User u = provider.getCustomerInfos(token);
-		String fullname = u.getFullName();
 		
 		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(System.in);
 		
-		System.out.println("Bonjour " + fullname);
+		System.out.println("Bonjour " + u.getFullName() + ", mail : " + u.getMail());
 		System.out.println("1 - Envoyer mail");
 		System.out.println("2 - Lire les mails");
 		System.out.println("3 - Lire les mails envoyés");
@@ -153,7 +101,8 @@ public class Main {
 		System.out.println("5 - Programmer un mail");
 		System.out.println("6 - Programmer un mail groupé");
 		System.out.println("7 - Lire les mails programmés");
-		System.out.println("0 - Se déconnecter");
+		System.out.println("9 - Se déconnecter");
+		System.out.println("0 - Quitter");
 		System.out.println("Votre choix : ");
 		
         int choix = scanner.nextInt();
@@ -173,8 +122,10 @@ public class Main {
         		ProgrammedGroupedMailMenu();
         	case 7:
         		ShowProgrammedMails();
-        	case 0:
+        	case 9:
 				Deconnexion();
+        	case 0:
+        		System.exit(0);
         	default:
         		menu();
         }
