@@ -34,3 +34,19 @@ CREATE TABLE `oauth_tokens` (
   UNIQUE KEY `unique_user_id` (`user_id`),
   CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+### Configuration des credentials OAuth
+
+Le projet nécessite un dossier **`resources`** à la racine, qui doit contenir les fichiers de configuration JSON des credentials pour chaque fournisseur (ex : Gmail, Outlook, Yahoo).
+
+Chaque fichier JSON doit suivre la structure suivante :
+
+```json
+{
+  "client_id": "VOTRE_CLIENT_ID",
+  "client_secret": "VOTRE_CLIENT_SECRET",
+  "redirect_uris": "URI_DE_REDIRECTION",
+  "auth_uri": "URL_D_AUTHENTIFICATION",
+  "token_uri": "URL_DE_RECEPTION_DU_TOKEN"
+}
