@@ -1,3 +1,10 @@
+
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](./LICENSE) pour plus d’informations.
+
+
 ## Initialisation du projet
 
 Avant de lancer l'application, il est nécessaire de créer la base de données et ses tables.
@@ -51,7 +58,3 @@ Chaque fichier JSON doit suivre la structure suivante :
   "token_uri": "URL_DE_RECEPTION_DU_TOKEN"
 }
 ```
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](./LICENSE) pour plus d’informations.
