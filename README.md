@@ -50,3 +50,8 @@ Chaque fichier JSON doit suivre la structure suivante :
   "auth_uri": "URL_D_AUTHENTIFICATION",
   "token_uri": "URL_DE_RECEPTION_DU_TOKEN"
 }
+```
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](./LICENSE) pour plus d’informations.
